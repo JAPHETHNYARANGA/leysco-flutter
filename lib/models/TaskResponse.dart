@@ -3,7 +3,7 @@ class Task {
   final String name;
   final String status;
   final int userId;
-  final int? assignedUser;
+  final String? assignedUser;
   final String createdAt;
   final String updatedAt;
 
@@ -23,7 +23,7 @@ class Task {
       name: json['name'],
       status: json['status'],
       userId: json['user_id'],
-      assignedUser: json['assigned_user'] as int?, // Cast to int? directly
+      assignedUser: json['assigned_user'], // Cast to int? directly
       createdAt: json['created_at'],
       updatedAt: json['updated_at'],
     );

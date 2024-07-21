@@ -108,7 +108,7 @@ class _HomePageState extends State<HomePage> {
     TextEditingController taskNameController = TextEditingController();
 
     // Selected user ID for assigning the task
-    int? selectedUserId;
+    String? selectedUserId;
 
     showModalBottomSheet(
       context: context,
@@ -134,15 +134,15 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   SizedBox(height: 16),
-                  DropdownButtonFormField<int>(
+                  DropdownButtonFormField<String>(
                     value: selectedUserId,
                     items: users.map((User user) {
-                      return DropdownMenuItem<int>(
-                        value: user.id,
+                      return DropdownMenuItem<String>(
+                        value: user.name.toString(), // Ensure value is a string
                         child: Text(user.name),
                       );
                     }).toList(),
-                    onChanged: (int? value) {
+                    onChanged: (String? value) {
                       setState(() {
                         selectedUserId = value;
                       });
@@ -160,8 +160,8 @@ class _HomePageState extends State<HomePage> {
                         onPressed: () async {
                           Map<String, dynamic> taskData = {
                             'name': taskNameController.text,
-                            'status':'pending',
-                            'assigned_user_id': selectedUserId,
+                            'status': 'pending',
+                            'assigned_user': selectedUserId,
                           };
                           try {
                             await _progressDialog.show();
@@ -187,6 +187,7 @@ class _HomePageState extends State<HomePage> {
       },
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
