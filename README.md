@@ -1,16 +1,26 @@
 # leysco
 
-A new Flutter project.
+This Flutter application allows users to manage tasks with different statuses (pending, in-progress, completed) using a backend Laravel API. Users can log in, view tasks, add new tasks, update task statuses, and log out.
 
 ## Getting Started
+To run the project locally, follow these steps:
 
-This project is a starting point for a Flutter application.
+## Prerequisites
+* Flutter SDK installed (version used: 2.x)
+* Android/iOS emulator or device connected
 
-A few resources to get you started if this is your first Flutter project:
+## Backend Setup
+### Clone Laravel Backend:
+* Clone the Laravel backend repository from GitHub.`https://github.com/JAPHETHNYARANGA/leysco-todo-api.git`
+* Follow the README instructions to set up and run the Laravel backend.
+* Ensure the backend is running locally and accessible via its local URL (e.g., http://localhost:8000).
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### Expose Backend with ngrok:
+* Install ngrok and run it to expose your local server to a public URL.
+* Replace the baseUrl in lib/services/ApiService.dart with your ngrok URL. Example:`static const String baseUrl = 'https://your-ngrok-url.ngrok.io/api'`;
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Flutter Project Setup
+* Clone this Flutter project from GitHub. `https://github.com/JAPHETHNYARANGA/leysco-flutter.git`
+* Run flutter pub get to install dependencies.
+* Run flutter run in the project directory to build and launch the app.
+
