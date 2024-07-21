@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 import '../services/ApiService.dart';
 import '../widgets/CustomButtom.dart';
 import '../widgets/CustomInput.dart';
@@ -15,12 +16,27 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final ApiService _apiService = ApiService();
+  late ProgressDialog _progressDialog;
 
-  void _loginUser() {
+  @override
+  void initState() {
+    super.initState();
+    _progressDialog = ProgressDialog(context);
+    _progressDialog.style(
+      message: 'Please wait...',
+      progressWidget: CircularProgressIndicator(),
+    );
+  }
+
+  void _loginUser() async {
     String email = _emailController.text.trim();
     String password = _passwordController.text.trim();
 
-    _apiService.login(email, password).then((response) {
+    try {
+      await _progressDialog.show();
+      var response = await _apiService.login(email, password);
+      await _progressDialog.hide();
+
       // Handle successful login response
       print('Login Success: ${response.message}');
       // Navigate to home page or perform other actions
@@ -28,13 +44,13 @@ class _LoginScreenState extends State<LoginScreen> {
         context,
         MaterialPageRoute(builder: (context) => HomePage()),
       );
-    }).catchError((error) {
+    } catch (error) {
+      await _progressDialog.hide();
       // Handle login failure (optional)
       print('Login Error: $error');
       // You can show an error message or perform other actions here
-    });
+    }
   }
-
 
   @override
   Widget build(BuildContext context) {

@@ -50,7 +50,7 @@ class ApiService {
       },
     );
 
-    if (response.statusCode == 200) {
+    if (response.statusCode == 201) {
       final Map<String, dynamic> responseData = json.decode(response.body);
       return RegisterResponse.fromJson(responseData);
     } else {

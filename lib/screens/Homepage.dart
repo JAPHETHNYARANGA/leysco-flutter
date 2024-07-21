@@ -1,11 +1,10 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/LoginResponse.dart';
 import '../models/TaskResponse.dart';
-import '../services/ApiService.dart'; // Import your ApiService
+import '../services/ApiService.dart'; // Import ApiService
 import 'LoginScreen.dart';
-
 
 class HomePage extends StatefulWidget {
   @override
@@ -16,19 +15,23 @@ class _HomePageState extends State<HomePage> {
   ApiService _apiService = ApiService();
   List<Task> tasks = [];
   List<User> users = []; // List to hold fetched users
+  late ProgressDialog _progressDialog;
 
   @override
   void initState() {
     super.initState();
+    _progressDialog = ProgressDialog(context);
     _fetchTasks();
   }
 
   Future<void> _fetchTasks() async {
     try {
+      await _progressDialog.show();
       List<Task> fetchedTasks = await _apiService.fetchTasks();
       setState(() {
         tasks = fetchedTasks;
       });
+      await _progressDialog.hide();
 
       // Log fetched tasks
       print('Fetched Tasks:');
@@ -39,26 +42,38 @@ class _HomePageState extends State<HomePage> {
         print('---');
       });
     } catch (e) {
+      await _progressDialog.hide();
       print('Error fetching tasks: $e');
       // Handle error, show snackbar, etc.
     }
   }
 
   Future<void> _logout() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove('authToken'); // Remove authToken from SharedPreferences
+    try {
+      await _progressDialog.show();
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.remove('authToken'); // Remove authToken from SharedPreferences
+      await _progressDialog.hide();
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => LoginScreen()),
-    );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => LoginScreen()),
+      );
+    } catch (e) {
+      await _progressDialog.hide();
+      print('Logout Error: $e');
+      // Handle error, show snackbar, etc.
+    }
   }
 
   Future<void> _startTask(Task task) async {
     try {
+      await _progressDialog.show();
       await _apiService.startTask(task.id);
       await _fetchTasks(); // Refresh task list after modification
+      await _progressDialog.hide();
     } catch (e) {
+      await _progressDialog.hide();
       print('Error starting task: $e');
       // Handle error, show snackbar, etc.
     }
@@ -66,12 +81,111 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _completeTask(Task task) async {
     try {
+      await _progressDialog.show();
       await _apiService.completeTask(task.id);
       await _fetchTasks(); // Refresh task list after modification
+      await _progressDialog.hide();
     } catch (e) {
+      await _progressDialog.hide();
       print('Error completing task: $e');
       // Handle error, show snackbar, etc.
     }
+  }
+
+  void _showAddTaskModal(BuildContext context) async {
+    try {
+      await _progressDialog.show();
+      users = await _apiService.fetchUsers(); // Fetch users asynchronously
+      await _progressDialog.hide();
+    } catch (e) {
+      await _progressDialog.hide();
+      print('Error fetching users: $e');
+      // Handle error, show snackbar, etc.
+      return;
+    }
+
+    // Controller for task name input
+    TextEditingController taskNameController = TextEditingController();
+
+    // Selected user ID for assigning the task
+    int? selectedUserId;
+
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Container(
+              padding: EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Add Task',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 16),
+                  TextField(
+                    controller: taskNameController,
+                    decoration: InputDecoration(
+                      labelText: 'Task Name',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  DropdownButtonFormField<int>(
+                    value: selectedUserId,
+                    items: users.map((User user) {
+                      return DropdownMenuItem<int>(
+                        value: user.id,
+                        child: Text(user.name),
+                      );
+                    }).toList(),
+                    onChanged: (int? value) {
+                      setState(() {
+                        selectedUserId = value;
+                      });
+                    },
+                    decoration: InputDecoration(
+                      labelText: 'Assign To',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () async {
+                          Map<String, dynamic> taskData = {
+                            'name': taskNameController.text,
+                            'status':'pending',
+                            'assigned_user_id': selectedUserId,
+                          };
+                          try {
+                            await _progressDialog.show();
+                            await _apiService.createTask(taskData);
+                            await _progressDialog.hide();
+                            Navigator.pop(context); // Close the modal on success
+                            await _fetchTasks(); // Refresh task list after adding new task
+                          } catch (e) {
+                            await _progressDialog.hide();
+                            print('Error creating task: $e');
+                            // Handle error, show snackbar, etc.
+                          }
+                        },
+                        child: Text('Add Task'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -173,7 +287,9 @@ class _HomePageState extends State<HomePage> {
                   } else if (value == 'Delete') {
                     // Call method to delete task
                     await _apiService.deleteTask(task.id);
-                    _fetchTasks();
+                    await _progressDialog.show();
+                    await _fetchTasks();
+                    await _progressDialog.hide();
                   }
                 },
               ),
@@ -195,94 +311,5 @@ class _HomePageState extends State<HomePage> {
       default:
         return '';
     }
-  }
-
-  void _showAddTaskModal(BuildContext context) async {
-    try {
-      users = await _apiService.fetchUsers(); // Fetch users asynchronously
-    } catch (e) {
-      print('Error fetching users: $e');
-      // Handle error, show snackbar, etc.
-      return;
-    }
-
-    // Controller for task name input
-    TextEditingController taskNameController = TextEditingController();
-
-    // Selected user ID for assigning the task
-    int? selectedUserId;
-
-    showModalBottomSheet(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setState) {
-            return Container(
-              padding: EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Add Task',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 16),
-                  TextField(
-                    controller: taskNameController,
-                    decoration: InputDecoration(
-                      labelText: 'Task Name',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  DropdownButtonFormField<int>(
-                    value: selectedUserId,
-                    items: users.map((User user) {
-                      return DropdownMenuItem<int>(
-                        value: user.id,
-                        child: Text(user.name),
-                      );
-                    }).toList(),
-                    onChanged: (int? value) {
-                      setState(() {
-                        selectedUserId = value;
-                      });
-                    },
-                    decoration: InputDecoration(
-                      labelText: 'Assign To',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () async {
-                          Map<String, dynamic> taskData = {
-                            'name': taskNameController.text,
-                            'assigned_user_id': selectedUserId,
-                          };
-                          try {
-                            await _apiService.createTask(taskData);
-                            Navigator.pop(context); // Close the modal on success
-                            _fetchTasks(); // Refresh task list after adding new task
-                          } catch (e) {
-                            print('Error creating task: $e');
-                            // Handle error, show snackbar, etc.
-                          }
-                        },
-                        child: Text('Add Task'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
   }
 }

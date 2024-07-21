@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:leysco/screens/LoginScreen.dart';
+import 'package:progress_dialog_null_safe/progress_dialog_null_safe.dart';
 
 import '../services/ApiService.dart';
 import '../widgets/CustomButtom.dart';
@@ -15,33 +16,48 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final ApiService _apiService = ApiService();
+  late ProgressDialog _progressDialog;
 
+  @override
+  void initState() {
+    super.initState();
+    _progressDialog = ProgressDialog(context);
+    _progressDialog.style(
+      message: 'Please wait...',
+      progressWidget: CircularProgressIndicator(),
+    );
+  }
 
-  void _registerUser() {
+  void _registerUser() async {
+    String name = _nameController.text.trim();
     String email = _emailController.text.trim();
     String password = _passwordController.text.trim();
-    String name = _nameController.text.trim();
 
-    _apiService.register( name,email, password).then((response) {
-      // Handle successful login response
-      print('Login Success: ${response}');
-      // Navigate to home page or perform other actions
+    try {
+      await _progressDialog.show();
+      var response = await _apiService.register(name, email, password);
+      await _progressDialog.hide();
+
+      // Handle successful registration response
+      print('Registration Success: $response');
+      // Navigate to login screen or perform other actions
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => LoginScreen()),
       );
-    }).catchError((error) {
-      // Handle login failure (optional)
-      print('Login Error: $error');
+    } catch (error) {
+      await _progressDialog.hide();
+      // Handle registration failure (optional)
+      print('Registration Error: $error');
       // You can show an error message or perform other actions here
-    });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Login'),
+        title: Text('Register'),
       ),
       body: Padding(
         padding: EdgeInsets.all(20.0),
@@ -73,12 +89,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               text: 'Register',
               onPressed: _registerUser,
             ),
-
-            SizedBox(height: 20.0,),
-
+            SizedBox(height: 20.0),
             GestureDetector(
               onTap: () {
-                // Navigate to Registration screen
+                // Navigate to Login screen
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => LoginScreen()),
@@ -95,7 +109,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ),
             ),
-
           ],
         ),
       ),
